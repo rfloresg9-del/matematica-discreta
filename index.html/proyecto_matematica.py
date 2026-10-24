@@ -2,9 +2,8 @@
 import tkinter as tk
 import math
 
-
 # =====================================
-# ARBOLES BINARIOS BALANCEADOS
+# ARBOL AVL BALANCEADO
 # =====================================
 
 class Nodo:
@@ -12,63 +11,157 @@ class Nodo:
         self.valor = valor
         self.izquierda = None
         self.derecha = None
+        self.altura = 1
 
 
-def crear_arbol(numeros):
-    if not numeros:
-        return None
+def altura(nodo):
+    if nodo is None:
+        return 0
+    return nodo.altura
 
-    medio = len(numeros) // 2
-    raiz = Nodo(numeros[medio])
 
-    raiz.izquierda = crear_arbol(numeros[:medio])
-    raiz.derecha = crear_arbol(numeros[medio + 1:])
+def factor_balance(nodo):
+    if nodo is None:
+        return 0
+    return altura(nodo.izquierda) - altura(nodo.derecha)
+
+
+def actualizar_altura(nodo):
+    nodo.altura = 1 + max(
+        altura(nodo.izquierda),
+        altura(nodo.derecha)
+    )
+
+
+# ROTACION SIMPLE A LA DERECHA
+def rotacion_derecha(y):
+    x = y.izquierda
+    temporal = x.derecha
+
+    x.derecha = y
+    y.izquierda = temporal
+
+    actualizar_altura(y)
+    actualizar_altura(x)
+
+    print("Rotacion simple a la derecha")
+    return x
+
+
+# ROTACION SIMPLE A LA IZQUIERDA
+def rotacion_izquierda(x):
+    y = x.derecha
+    temporal = y.izquierda
+
+    y.izquierda = x
+    x.derecha = temporal
+
+    actualizar_altura(x)
+    actualizar_altura(y)
+
+    print("Rotacion simple a la izquierda")
+    return y
+
+
+# INSERTAR NUMEROS Y BALANCEAR
+def insertar(raiz, valor):
+    if raiz is None:
+        return Nodo(valor)
+
+    if valor < raiz.valor:
+        raiz.izquierda = insertar(raiz.izquierda, valor)
+    elif valor > raiz.valor:
+        raiz.derecha = insertar(raiz.derecha, valor)
+    else:
+        return raiz
+
+    actualizar_altura(raiz)
+
+    balance = factor_balance(raiz)
+
+    # Caso izquierda-izquierda
+    if balance > 1 and valor < raiz.izquierda.valor:
+        return rotacion_derecha(raiz)
+
+    # Caso derecha-derecha
+    if balance < -1 and valor > raiz.derecha.valor:
+        return rotacion_izquierda(raiz)
+
+    # Caso izquierda-derecha
+    if balance > 1 and valor > raiz.izquierda.valor:
+        print("Rotacion doble izquierda-derecha")
+        raiz.izquierda = rotacion_izquierda(raiz.izquierda)
+        return rotacion_derecha(raiz)
+
+    # Caso derecha-izquierda
+    if balance < -1 and valor < raiz.derecha.valor:
+        print("Rotacion doble derecha-izquierda")
+        raiz.derecha = rotacion_derecha(raiz.derecha)
+        return rotacion_izquierda(raiz)
 
     return raiz
 
 
+# =====================================
+# RECORRIDOS DEL ARBOL
+# =====================================
+
 def preorden(raiz):
     if raiz is None:
         return []
-    return ([raiz.valor] +
-            preorden(raiz.izquierda) +
-            preorden(raiz.derecha))
+
+    return (
+        [raiz.valor]
+        + preorden(raiz.izquierda)
+        + preorden(raiz.derecha)
+    )
 
 
 def inorden(raiz):
     if raiz is None:
         return []
-    return (inorden(raiz.izquierda) +
-            [raiz.valor] +
-            inorden(raiz.derecha))
+
+    return (
+        inorden(raiz.izquierda)
+        + [raiz.valor]
+        + inorden(raiz.derecha)
+    )
 
 
 def postorden(raiz):
     if raiz is None:
         return []
-    return (postorden(raiz.izquierda) +
-            postorden(raiz.derecha) +
-            [raiz.valor])
+
+    return (
+        postorden(raiz.izquierda)
+        + postorden(raiz.derecha)
+        + [raiz.valor]
+    )
 
 
-# DIBUJAR EL ARBOL
+# =====================================
+# DIBUJAR ARBOL AVL
+# =====================================
+
 def dibujar_arbol(raiz):
     ventana = tk.Tk()
-    ventana.title("Arbol Binario Balanceado")
+    ventana.title("Arbol AVL Balanceado")
     ventana.geometry("950x650")
     ventana.configure(bg="white")
 
     tk.Label(
         ventana,
-        text="ARBOL BINARIO BALANCEADO",
+        text="ARBOL AVL BALANCEADO",
         font=("Arial", 18, "bold"),
         bg="white",
         fg="#174a7e"
     ).pack(pady=10)
 
     lienzo = tk.Canvas(
-        ventana, bg="white",
-        width=900, height=440
+        ventana,
+        bg="white",
+        width=900,
+        height=440
     )
     lienzo.pack(fill="both", expand=True)
 
@@ -76,32 +169,40 @@ def dibujar_arbol(raiz):
         if nodo is None:
             return
 
-        siguiente = max(separacion / 2, 25)
+        siguiente = separacion / 2
 
         if nodo.izquierda:
             nx = x - separacion
             ny = y + 75
+
             lienzo.create_line(
                 x, y, nx, ny,
-                fill="#555555", width=2
+                fill="#555555",
+                width=2
             )
+
             dibujar(nodo.izquierda, nx, ny, siguiente)
 
         if nodo.derecha:
             nx = x + separacion
             ny = y + 75
+
             lienzo.create_line(
                 x, y, nx, ny,
-                fill="#555555", width=2
+                fill="#555555",
+                width=2
             )
+
             dibujar(nodo.derecha, nx, ny, siguiente)
 
         lienzo.create_oval(
-            x-22, y-22, x+22, y+22,
+            x-22, y-22,
+            x+22, y+22,
             fill="#a9d6ff",
             outline="#175fa5",
             width=2
         )
+
         lienzo.create_text(
             x, y,
             text=str(nodo.valor),
@@ -116,23 +217,26 @@ def dibujar_arbol(raiz):
     lienzo.bind("<Configure>", actualizar)
 
     texto = (
-        "PREORDEN: " +
-        ", ".join(map(str, preorden(raiz))) +
-        "\nINORDEN: " +
-        ", ".join(map(str, inorden(raiz))) +
-        "\nPOSTORDEN: " +
-        ", ".join(map(str, postorden(raiz)))
+        "PREORDEN: "
+        + ", ".join(map(str, preorden(raiz)))
+        + "\nINORDEN: "
+        + ", ".join(map(str, inorden(raiz)))
+        + "\nPOSTORDEN: "
+        + ", ".join(map(str, postorden(raiz)))
     )
 
     tk.Label(
-        ventana, text=texto,
+        ventana,
+        text=texto,
         font=("Arial", 11),
-        bg="white", justify="left",
+        bg="white",
+        justify="left",
         wraplength=850
     ).pack(pady=15)
 
     tk.Button(
-        ventana, text="Cerrar ventana",
+        ventana,
+        text="Cerrar ventana",
         command=ventana.destroy
     ).pack(pady=10)
 
@@ -140,7 +244,7 @@ def dibujar_arbol(raiz):
 
 
 def opcion_arbol():
-    print("\n===== CREAR ARBOL BALANCEADO =====")
+    print("\n===== CREAR ARBOL AVL =====")
 
     try:
         entrada = input(
@@ -148,17 +252,21 @@ def opcion_arbol():
         )
 
         numeros = [
-            int(x.strip()) for x in entrada.split(",")
+            int(x.strip())
+            for x in entrada.split(",")
         ]
 
         if len(numeros) != len(set(numeros)):
             print("No se permiten numeros repetidos.")
             return
 
-        numeros.sort()
-        raiz = crear_arbol(numeros)
+        raiz = None
 
-        print("\nARBOL CREADO CORRECTAMENTE")
+        for numero in numeros:
+            print("\nInsertando:", numero)
+            raiz = insertar(raiz, numero)
+
+        print("\nARBOL AVL CREADO CORRECTAMENTE")
         print("Preorden:", preorden(raiz))
         print("Inorden:", inorden(raiz))
         print("Postorden:", postorden(raiz))
@@ -208,7 +316,10 @@ def buscar_hamiltoniana(grafo):
     return None
 
 
-# DIBUJAR EL GRAFO
+# =====================================
+# DIBUJAR GRAFO
+# =====================================
+
 def dibujar_grafo(grafo, trayectoria):
     ventana = tk.Tk()
     ventana.title("Trayectoria Hamiltoniana")
@@ -219,21 +330,22 @@ def dibujar_grafo(grafo, trayectoria):
         ventana,
         text="TRAYECTORIA HAMILTONIANA",
         font=("Arial", 18, "bold"),
-        bg="white", fg="#174a7e"
+        bg="white",
+        fg="#174a7e"
     ).pack(pady=15)
 
     lienzo = tk.Canvas(
-        ventana, width=800,
-        height=450, bg="white"
+        ventana,
+        width=800,
+        height=450,
+        bg="white"
     )
     lienzo.pack(fill="both", expand=True)
 
     vertices = list(grafo.keys())
     cantidad = len(vertices)
-
     posiciones = {}
 
-    # Distribuir vertices en forma circular
     for i, vertice in enumerate(vertices):
         angulo = 2 * math.pi * i / cantidad
 
@@ -242,18 +354,17 @@ def dibujar_grafo(grafo, trayectoria):
 
         posiciones[vertice] = (x, y)
 
-    # Identificar conexiones de la trayectoria
     conexiones_camino = set()
 
     if trayectoria is not None:
         for i in range(len(trayectoria) - 1):
             a = trayectoria[i]
             b = trayectoria[i + 1]
+
             conexiones_camino.add(
                 frozenset((a, b))
             )
 
-    # Dibujar todas las conexiones
     for a in grafo:
         for b in grafo[a]:
             if a < b:
@@ -274,13 +385,14 @@ def dibujar_grafo(grafo, trayectoria):
 
                 lienzo.create_line(
                     x1, y1, x2, y2,
-                    fill=color, width=grosor
+                    fill=color,
+                    width=grosor
                 )
 
-    # Dibujar vertices
     for vertice, (x, y) in posiciones.items():
         lienzo.create_oval(
-            x-23, y-23, x+23, y+23,
+            x-23, y-23,
+            x+23, y+23,
             fill="#b9e6ff",
             outline="#175fa5",
             width=2
@@ -299,15 +411,15 @@ def dibujar_grafo(grafo, trayectoria):
         )
         color = "green"
     else:
-        mensaje = (
-            "NO EXISTE TRAYECTORIA HAMILTONIANA"
-        )
+        mensaje = "NO EXISTE TRAYECTORIA HAMILTONIANA"
         color = "red"
 
     tk.Label(
-        ventana, text=mensaje,
+        ventana,
+        text=mensaje,
         font=("Arial", 13, "bold"),
-        fg=color, bg="white"
+        fg=color,
+        bg="white"
     ).pack(pady=15)
 
     tk.Button(
@@ -332,7 +444,8 @@ def opcion_hamiltoniana():
             return
 
         vertices = [
-            chr(65 + i) for i in range(cantidad)
+            chr(65 + i)
+            for i in range(cantidad)
         ]
 
         grafo = {v: [] for v in vertices}
@@ -402,7 +515,7 @@ def menu():
         print("\n========================================")
         print("      PROYECTO MATEMATICA DISCRETA")
         print("========================================")
-        print("1. Crear arbol balanceado y recorridos")
+        print("1. Crear arbol AVL balanceado y recorridos")
         print("2. Trayectoria hamiltoniana")
         print("3. Salir")
         print("========================================")
